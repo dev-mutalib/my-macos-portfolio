@@ -1,14 +1,14 @@
-import React from 'react'
-import Navbar from '@components/Navbar'
+import React from 'react';
+import Index from '@components';
 
 const App = () => {
   return (
     <>
-    <main>
-      <Navbar />
-    </main>
+      <main>
+        <Index />
+      </main>
     </>
-  )
-}
+  );
+};
 
-export default App
+export default App;
