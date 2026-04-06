@@ -62,7 +62,7 @@ const setupTextHover = (container, type) => {
       const distance = Math.abs(mouseX - cachedCenters[i]);
       const intensity = Math.exp(-(distance ** 2) / 2000);
 
-      animateLetter(letter, min + (max - intensity) * intensity);
+      animateLetter(letter, min + (max - min) * intensity);
     });
 
     rafId = null;
