@@ -33,30 +33,65 @@ const setupTextHover = (container, type) => {
     });
   };
 
-  const handleMouseMoveEvent = (e) => {
-    const { left } = container.getBoundingClientRect();
-    const mouseX = e.clientX - left;
+  let rafId;
+  let pendingClientX = null;
+  let cachedCenters = [];
+  let containerLeft = 0;
 
-    letters.forEach((letter) => {
-      const { left: l, width: w } = letter.getBoundingClientRect();
-      const distance = Math.abs(mouseX - (l - left + w / 2));
-      const intensity = Math.exp(-(distance ** 2) / 2000);
-
-      animateLetter(letter, min + (max - min) * intensity);
+  const updateCache = () => {
+    const rect = container.getBoundingClientRect();
+    containerLeft = rect.left;
+    cachedCenters = Array.from(letters).map((letter) => {
+      const lRect = letter.getBoundingClientRect();
+      return lRect.left - containerLeft + lRect.width / 2;
     });
   };
 
+  updateCache();
+  window.addEventListener('resize', updateCache);
+
+  const render = () => {
+    if (pendingClientX === null) {
+      rafId = null;
+      return;
+    }
+    const mouseX = pendingClientX - containerLeft;
+    pendingClientX = null;
+
+    letters.forEach((letter, i) => {
+      const distance = Math.abs(mouseX - cachedCenters[i]);
+      const intensity = Math.exp(-(distance ** 2) / 2000);
+
+      animateLetter(letter, min + (max - intensity) * intensity);
+    });
+
+    rafId = null;
+  };
+
+  const handleMouseMoveEvent = (e) => {
+    pendingClientX = e.clientX;
+    if (!rafId) {
+      rafId = requestAnimationFrame(render);
+    }
+  };
+
   const handleMouseLeaveEvent = () => {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    pendingClientX = null;
     letters.forEach((letter) => {
       animateLetter(letter, base);
     });
   };
 
-
   container.addEventListener('mousemove', handleMouseMoveEvent);
   container.addEventListener('mouseleave', handleMouseLeaveEvent);
 
   return () => {
+    window.removeEventListener('resize', updateCache);
+    if (rafId) cancelAnimationFrame(rafId);
     container.removeEventListener('mousemove', handleMouseMoveEvent);
     container.removeEventListener('mouseleave', handleMouseLeaveEvent);
   };
@@ -71,8 +106,8 @@ const Welcome = () => {
     const subTitleCleanup = setupTextHover(subTitleRef.current, 'subTitle');
 
     return () => {
-      titleCleanup();
-      subTitleCleanup();
+      titleCleanup?.();
+      subTitleCleanup?.();
     };
   }, []);
 
@@ -93,7 +128,7 @@ const Welcome = () => {
       </h1>
 
       <div className='small-screen'>
-        <p>This Profolio is designed for desktop/tabled screens only</p>
+        <p>This Profolio is designed for desktop/tablet screens only</p>
       </div>
     </section>
   );

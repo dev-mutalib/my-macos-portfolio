@@ -1,6 +1,6 @@
 import React from 'react'
-import Navbar from './Navbar'
-import Welcome from './Welcome'
+import Navbar from '@components/Navbar'
+import Welcome from '@components/Welcome'
 
 const Index = () => {
   return (
