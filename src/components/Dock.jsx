@@ -3,8 +3,10 @@ import { dockApps } from '@constants';
 import { Tooltip } from 'react-tooltip';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import useWindowStore from '@store/window.js';
 
 const Dock = () => {
+  const { openWindow, closeWindow, windows } = useWindowStore();
   const dockRef = useRef(null);
 
   useGSAP(() => {
@@ -13,12 +15,15 @@ const Dock = () => {
 
     const icons = dock.querySelectorAll('.dock-icon');
 
-    const animatIcon = (mouseX) => {
-      const {left} = dock.getBoundingClientRect();
+    let rafId;
+
+    const animatIcon = (clientX) => {
+      const { left: dockLeft } = dock.getBoundingClientRect();
 
       icons.forEach((icon) => {
         const { left: iconLeft, width } = icon.getBoundingClientRect();
-        const center = iconLeft - left + width / 2;
+        const center = iconLeft - dockLeft + width / 2;
+        const mouseX = clientX - dockLeft;
         const distance = Math.abs(mouseX - center);
         const intensity = Math.exp(-(distance ** 2) / 2000);
 
@@ -32,11 +37,12 @@ const Dock = () => {
     };
 
     const handleMouseMoveEvent = (e) => {
-      const { left } = dock.getBoundingClientRect();
-      animatIcon(e.clientX - left);
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => animatIcon(e.clientX));
     };
 
     const resetIcons = () => {
+      if (rafId) cancelAnimationFrame(rafId);
       icons.forEach((icon) => {
         gsap.to(icon, {
           scale: 1,
@@ -52,12 +58,21 @@ const Dock = () => {
     return () => {
       dock.removeEventListener('mousemove', handleMouseMoveEvent);
       dock.removeEventListener('mouseleave', resetIcons);
-    }
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
-
   const toggleApp = (app) => {
-     //TODO: Implement Open Window Logic
+    if (!app.canOpen) return;
+    const win = windows[app.id];
+
+    if (!win) return;
+
+    if (win.isOpen) {
+      closeWindow(app.id);
+    } else {
+      openWindow(app.id);
+    }
   };
 
   return (
